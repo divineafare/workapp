@@ -5,9 +5,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 import joblib
+from flask import Flask, request, jsonify
 
-# Load the dataset
-df = pd.read_csv('product_pricing_dataset.csv')
+# Initialize Flask app
+app = Flask(__name__)
+
+# Load the dataset and train the model when the app starts
+df = pd.read_csv('product_pricing_dataset (1).csv')
 
 # Display first few rows
 print(df.head())
@@ -42,3 +46,27 @@ print(f"Mean Squared Error: {mse:.2f}")
 # Save the trained model
 joblib.dump(model, "pricing_model.pkl")
 print("Model saved as 'pricing_model.pkl'.")
+
+
+# Endpoint to make predictions using the trained model
+@app.route('/predict', methods=['POST'])
+def predict():
+    # Get data from POST request
+    data = request.get_json()
+    
+    # Convert the input data into a pandas DataFrame
+    df_input = pd.DataFrame(data)
+    
+    # Select relevant features
+    X_input = df_input[["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"]]
+    
+    # Predict the Units Sold using the model
+    predictions = model.predict(X_input)
+    
+    # Return predictions as a JSON response
+    return jsonify({"predictions": predictions.tolist()})
+
+
+# Start Flask app
+if __name__ == "__main__":
+    app.run(debug=True)
