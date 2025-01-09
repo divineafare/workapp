@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # Load the dataset and train the model when the app starts
-df = pd.read_csv('product_pricing_dataset (1).csv')
+df = pd.read_csv('product_pricing_dataset.csv')
 
 # Display first few rows
 print(df.head())
