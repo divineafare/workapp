@@ -47,26 +47,6 @@ y_pred = model.predict(X_test)
 joblib.dump(model, "pricing_model.pkl")
 print("Model saved as 'pricing_model.pkl'.")
 
-
-# Endpoint to make predictions using the trained model
-@app.route('/predict', methods=['POST'])
-def predict():
-    # Get data from POST request
-    data = request.get_json()
-    
-    # Convert the input data into a pandas DataFrame
-    df_input = pd.DataFrame(data)
-    
-    # Select relevant features
-    X_input = df_input[["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"]]
-    
-    # Predict the Units Sold using the model
-    predictions = model.predict(X_input)
-    
-    # Return predictions as a JSON response
-    return jsonify({"predictions": predictions.tolist()})
-
-
 # Start Flask app
 if __name__ == "__main__":
     app.run(debug=True)
