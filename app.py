@@ -1,100 +1,44 @@
-from flask import Flask, request, render_template, jsonify, send_file
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 import joblib
-import os
-import logging
 
-# Set up logging for error tracking
-logging.basicConfig(level=logging.DEBUG)
+# Load the dataset
+df = pd.read_csv('product_pricing_dataset (1).csv')
 
-app = Flask(__name__)
+# Display first few rows
+print(df.head())
 
-UPLOAD_FOLDER = 'uploads'
-MODEL_FOLDER = 'models'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-if not os.path.exists(MODEL_FOLDER):
-    os.makedirs(MODEL_FOLDER)
+# Check dataset shape
+print(f"Dataset shape: {df.shape}")
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+# Check for missing values
+print(f"Missing values in dataset:\n{df.isnull().sum()}")
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        logging.error("No file part")
-        return "No file part"
-    file = request.files['file']
-    if file.filename == '':
-        logging.error("No selected file")
-        return "No selected file"
-    if file:
-        try:
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-            return train_and_evaluate(file_path)
-        except Exception as e:
-            logging.error(f"Error saving file: {e}")
-            return "Error during file upload."
+# Visualize Price vs Units Sold
+sns.scatterplot(x="Price", y="Units_Sold", hue="Product_Category", data=df)
+plt.title("Price vs Units Sold")
+plt.show()
 
-def train_and_evaluate(file_path):
-    try:
-        # Load the dataset
-        df = pd.read_csv(file_path)
+# Feature Selection
+X = df[["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"]]
+y = df["Units_Sold"]
 
-        # Check for missing values
-        if df.isnull().sum().any():
-            return "Dataset contains missing values. Please clean the data and try again."
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Visualize Price vs Units Sold
-        plt.figure(figsize=(8, 6))
-        sns.scatterplot(x="Price", y="Units_Sold", hue="Product_Category", data=df)
-        plt.title("Price vs Units Sold")
-        plt.savefig(os.path.join(UPLOAD_FOLDER, 'visualization.png'))
+# Train a Random Forest Regressor
+model = RandomForestRegressor(random_state=42)
+model.fit(X_train, y_train)
 
-        # Feature Selection
-        X = df[["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"]]
-        y = df["Units_Sold"]
+# Predictions and Evaluation
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error: {mse:.2f}")
 
-        # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        # Train a Random Forest Regressor
-        model = RandomForestRegressor(random_state=42)
-        model.fit(X_train, y_train)
-
-        # Predictions and Evaluation
-        y_pred = model.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-
-        # Save the model
-        model_path = os.path.join(MODEL_FOLDER, "pricing_model.pkl")
-        joblib.dump(model, model_path)
-
-        return jsonify({
-            "message": "Training completed successfully!",
-            "mean_squared_error": mse,
-            "model_path": model_path,
-            "visualization": os.path.join(UPLOAD_FOLDER, 'visualization.png')
-        })
-    except Exception as e:
-        logging.error(f"Error during model training: {e}")
-        return "Error during model training."
-
-@app.route('/download_model', methods=['GET'])
-def download_model():
-    model_path = os.path.join(MODEL_FOLDER, "pricing_model.pkl")
-    if os.path.exists(model_path):
-        return send_file(model_path, as_attachment=True)
-    else:
-        logging.error("Model file not found")
-        return "Model file not found."
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# Save the trained model
+joblib.dump(model, "pricing_model.pkl")
+print("Model saved as 'pricing_model.pkl'.")
