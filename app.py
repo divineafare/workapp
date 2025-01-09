@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
+#from sklearn.metrics import mean_squared_error
 import joblib
 from flask import Flask, request, jsonify
 
@@ -40,8 +40,8 @@ model.fit(X_train, y_train)
 
 # Predictions and Evaluation
 y_pred = model.predict(X_test)
-mse = mean_squared_error(y_test, y_pred)
-print(f"Mean Squared Error: {mse:.2f}")
+#mse = mean_squared_error(y_test, y_pred)
+#print(f"Mean Squared Error: {mse:.2f}")
 
 # Save the trained model
 joblib.dump(model, "pricing_model.pkl")
