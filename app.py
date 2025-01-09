@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error
 import joblib
 
 # Load the dataset
-df = pd.read_csv('product_pricing_dataset (1).csv')
+df = pd.read_csv('product_pricing_dataset.csv')
 
 # Display first few rows
 print(df.head())
