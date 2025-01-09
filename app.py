@@ -1,31 +1,39 @@
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-#from sklearn.metrics import mean_squared_error
 import joblib
-from flask import Flask, request, jsonify
 
-# Initialize Flask app
-app = Flask(__name__)
+# Streamlit App
+st.title("Product Pricing Analysis and Prediction")
 
-# Load the dataset and train the model when the app starts
-df = pd.read_csv('product_pricing_dataset.csv')
+# Load the dataset
+@st.cache_data  # Updated to use st.cache_data
+def load_data():
+    df = pd.read_csv('product_pricing_dataset.csv')
+    return df
 
-# Display first few rows
-print(df.head())
+df = load_data()
 
-# Check dataset shape
-print(f"Dataset shape: {df.shape}")
+# Display dataset overview
+st.header("Dataset Overview")
+st.write("First few rows of the dataset:")
+st.write(df.head())
+
+st.write("Dataset shape:", df.shape)
 
 # Check for missing values
-print(f"Missing values in dataset:\n{df.isnull().sum()}")
+st.write("Missing values in the dataset:")
+st.write(df.isnull().sum())
 
-# Visualize Price vs Units Sold
-sns.scatterplot(x="Price", y="Units_Sold", hue="Product_Category", data=df)
-plt.title("Price vs Units Sold")
-plt.show()
+# Visualization
+st.header("Visualization")
+st.write("Scatterplot: Price vs Units Sold (colored by Product Category)")
+fig, ax = plt.subplots()
+sns.scatterplot(x="Price", y="Units_Sold", hue="Product_Category", data=df, ax=ax)
+st.pyplot(fig)
 
 # Feature Selection
 X = df[["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"]]
@@ -34,19 +42,27 @@ y = df["Units_Sold"]
 # Split the data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train a Random Forest Regressor
+# Train the Random Forest Regressor
 model = RandomForestRegressor(random_state=42)
 model.fit(X_train, y_train)
 
-# Predictions and Evaluation
-y_pred = model.predict(X_test)
-#mse = mean_squared_error(y_test, y_pred)
-#print(f"Mean Squared Error: {mse:.2f}")
-
-# Save the trained model
+# Save the trained model (optional)
 joblib.dump(model, "pricing_model.pkl")
-print("Model saved as 'pricing_model.pkl'.")
+st.write("Trained model saved as 'pricing_model.pkl'.")
 
-# Start Flask app
-if __name__ == "__main__":
-    app.run(debug=True)
+# Prediction
+st.header("Make Predictions")
+st.write("Enter product details to predict units sold:")
+
+# User input for prediction
+price = st.number_input("Price", min_value=0.0, value=50.0, step=1.0)
+competitor_price = st.number_input("Competitor Price", min_value=0.0, value=50.0, step=1.0)
+customer_rating = st.number_input("Customer Rating (1-5)", min_value=1.0, max_value=5.0, value=4.0, step=0.1)
+demand_elasticity = st.number_input("Demand Elasticity", min_value=-5.0, max_value=5.0, value=1.0, step=0.1)
+
+# Predict button
+if st.button("Predict Units Sold"):
+    input_data = pd.DataFrame([[price, competitor_price, customer_rating, demand_elasticity]],
+                              columns=["Price", "Competitor_Price", "Customer_Rating", "Demand_Elasticity"])
+    prediction = model.predict(input_data)
+    st.write(f"Predicted Units Sold: {prediction[0]:.2f}")
